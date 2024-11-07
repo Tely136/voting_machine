@@ -1,43 +1,81 @@
-use std::io::{self, Write};
-use std::fs::OpenOptions;
-use csv::WriterBuilder;
+mod admin;
+mod utils;
 
-fn read_input() -> String {
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .unwrap_or_else(|err| {
-            eprintln!("Error reading input: {}", err);
-            std::process::exit(1);
-        });
-    input.trim().to_string()  // Trim the newline and return the input
+use std::{
+    // env,
+    // error::Error,
+    // fs,
+    io::{self, Write},
+    // path,
+    // process
+};
+
+
+fn voter_loop() {
+
 }
 
-fn main() {
-    print!("Enter Your Name: ");
-    _ = io::stdout().flush();
-    let votername = read_input();
 
-    print!("Enter Date of Birth: ");
-    _ = io::stdout().flush();
-    let dob = read_input();
+fn admin_loop() {
+    loop {
+        println!("Admin interface");
+        println!("Enter 1 to create new ballot");
+        println!("Enter 2 to add candidates to a ballot");
+        println!("Enter 3 to register new voters");
+        println!("Enter 4 to open or close an election");
+        println!("Enter 5 to tally votes for an election");
+        println!("Enter 0 to return to main menu");
+        print!("Selection: ");
+        _ = io::stdout().flush();
 
-    // Append the data to voter_db.csv`
-    if let Err(e) = append_to_csv("voter_db.csv", &votername, &dob) {
-        eprintln!("Failed to write to CSV: {}", e);
-    } else {
-        println!("Data saved successfully!");
+        let selection = utils::read_input().trim().parse::<i32>().unwrap();
+        if selection == 1 {
+            // get folder name for ballot
+            // save csv file with header for name, party, political office
+            admin::create_ballot();
+        }
+        else if selection == 2 {
+            // get folder name to load ballot from
+            // create ballot object using the file
+            // loop asking for new candidates to be added to ballot
+            // end loop when certain input is entered 
+            admin::add_candidate();
+        }
+        else if selection == 3 {
+            // open csv file of registered boters (maybe later this file can be encrypted or something idk)
+            // loop asking fo user input for name and birthdate
+            // end loop when certain input is entered
+            admin::register_voters();
+            
+        }
+        else if selection == 4 {
+            
+        }
+        else if selection == 5 {
+            
+        }
+        else if selection == 0 {
+            break;
+        }
+        else {
+            println!("Invalid selection");
+        }
+        println!("");
     }
 }
 
-fn append_to_csv(file_path: &str, name: &str, dob: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(file_path)?;
-    let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
 
-    writer.write_record(&[name, dob])?;
-    writer.flush()?;
-    Ok(())
+fn main() {
+    loop {
+        println!("Welcome to the voting machine");
+        println!("***Voter Options***");
+        println!("Admins enter 0 to login");
+
+        let input = utils::read_input();
+        if input == "0" {
+            // if admin_authenticate == true {
+                admin_loop();
+            // }
+        }   
+    }
 }
