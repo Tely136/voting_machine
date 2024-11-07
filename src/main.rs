@@ -1,57 +1,81 @@
-use std::io::{self, Write};
+mod admin;
+mod utils;
+
+use std::{
+    // env,
+    // error::Error,
+    // fs,
+    io::{self, Write},
+    // path,
+    // process
+};
+
+
+fn voter_loop() {
+
+}
+
+
+fn admin_loop() {
+    loop {
+        println!("Admin interface");
+        println!("Enter 1 to create new ballot");
+        println!("Enter 2 to add candidates to a ballot");
+        println!("Enter 3 to register new voters");
+        println!("Enter 4 to open or close an election");
+        println!("Enter 5 to tally votes for an election");
+        println!("Enter 0 to return to main menu");
+        print!("Selection: ");
+        _ = io::stdout().flush();
+
+        let selection = utils::read_input().trim().parse::<i32>().unwrap();
+        if selection == 1 {
+            // get folder name for ballot
+            // save csv file with header for name, party, political office
+            admin::create_ballot();
+        }
+        else if selection == 2 {
+            // get folder name to load ballot from
+            // create ballot object using the file
+            // loop asking for new candidates to be added to ballot
+            // end loop when certain input is entered 
+            admin::add_candidate();
+        }
+        else if selection == 3 {
+            // open csv file of registered boters (maybe later this file can be encrypted or something idk)
+            // loop asking fo user input for name and birthdate
+            // end loop when certain input is entered
+            
+        }
+        else if selection == 4 {
+            
+        }
+        else if selection == 5 {
+            
+        }
+        else if selection == 0 {
+            break;
+        }
+        else {
+            println!("Invalid selection");
+        }
+        println!("");
+    }
+}
+
 
 fn main() {
-    print!("Enter username: ");
-    _ = io::stdout().flush();
-    let input_username = read_input().trim().to_string();
+    loop {
+        println!("Welcome to the voting machine");
+        println!("***Voter Options***");
+        println!("Admins enter 0 to login");
 
-    print!("Enter password: ");
-    _ = io::stdout().flush();
-    let input_password = read_input().trim().to_string();
-
-    let database_path = "./db.csv";
-
-    let mut rdr = csv::ReaderBuilder::new()
-        .has_headers(false)
-        .from_path(database_path)
-        .unwrap_or_else(|_err| {
-            eprintln!("Error reading csv file");
-            std::process::exit(1);
-        });
-
-    // Initialize variable to false then loop over records in csv reader    
-    let mut login_success: bool = false;
-
-    for result in rdr.records() {
-        let record = result.unwrap();
-
-        //Check if input username and input password match current set of credentials in csv file
-        if let (Some(username), Some(password)) = (record.get(0), record.get(1)) {
-            if username.trim() == input_username && password.trim() == input_password {
-                println!("Access granted!");
-                login_success = true;
-                break;
-            }
-        }
-    }
-
-    // If the entire databse has been looked at and login_success is still false, print error message
-    if login_success == false {
-        println!("Error! Access denied!");
+        let input = utils::read_input();
+        if input == "0" {
+            admin::admin_authenticate();
+            // if admin_authenticate == true {
+                admin_loop();
+            // }
+        }   
     }
 }
-
-// Function to read user input from the terminal
-fn read_input() -> String {
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .unwrap_or_else(|err| {
-            eprintln!("Error reading input: {}", err);
-            std::process::exit(1);
-        });
-
-    input
-}
-
-
