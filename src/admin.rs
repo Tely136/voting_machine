@@ -159,7 +159,20 @@ pub fn add_candidate() {
 
 // Function to register new voters
 pub fn register_voters() {
+    print!("Enter Your Name: ");
+    _ = io::stdout().flush();
+    let votername = utils::read_input();
 
+    print!("Enter Date of Birth: ");
+    _ = io::stdout().flush();
+    let dob = utils::read_input();
+
+    // Append the data to voter_db.csv`
+    if let Err(e) = utils::append_to_csv("voter_db.csv", &votername, &dob) {
+        eprintln!("Failed to write to CSV: {}", e);
+    } else {
+        println!("Data saved successfully!");
+    }
 }
 
 

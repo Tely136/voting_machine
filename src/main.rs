@@ -45,6 +45,7 @@ fn admin_loop() {
             // open csv file of registered boters (maybe later this file can be encrypted or something idk)
             // loop asking fo user input for name and birthdate
             // end loop when certain input is entered
+            admin::register_voters();
             
         }
         else if selection == 4 {
