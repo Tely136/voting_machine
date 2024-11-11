@@ -7,8 +7,18 @@ use std::{
     io::{self, Write},
     path,
     // process
+    collections::HashMap
 };
 use csv;
+use serde::{Serialize, Deserialize};
+use serde_json::to_writer;
+
+#[derive(Serialize, Deserialize)]
+struct ElectionMetadata {
+    status: String,
+    candidates: HashMap<String, u32>,
+    total_votes: u32,
+}
 
 
 // Function to login an admin
@@ -89,6 +99,19 @@ pub fn create_ballot() {
     let mut wtr = csv::Writer::from_path(candidates_filepath).unwrap(); // fix the unwrap here
     wtr.write_record(&["Name", "Party", "Office"]).unwrap();
     wtr.flush().unwrap();
+
+
+    let candidates = HashMap::new();
+    let metadata = ElectionMetadata {
+        status: "closed".to_string(),
+        candidates,
+        total_votes: 0,
+    };
+
+    let metadata_filepath = folder_path.join("metadata.json");
+    let metadata_file = fs::File::create(metadata_filepath).unwrap();
+    to_writer(metadata_file, &metadata).unwrap();
+
 }
 
 
@@ -178,8 +201,54 @@ pub fn register_voters() {
 
 // Function to open or close an election
 pub fn open_close_election() {
+    print!("Enter ballot name:");
+    _ = io::stdout().flush();
+    let folder_name = utils::read_input();
+    println!("");
 
+    let folder_path = path::Path::new("./ballots").join(&folder_name);
+    let metadata_filepath = folder_path.join("metadata.json");
+    if metadata_filepath.try_exists().expect("couldn't check existence") == true {
+        let metadata_file = fs::File::open(&metadata_filepath).unwrap();
+        let mut metadata: ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+
+        if metadata.status == "closed" {
+            println!("Election is currently closed. Would you like to open it? (y/n)");
+            // take input
+            _ = io::stdout().flush();
+            let response = utils::read_input();
+            if response == "y" {
+                metadata.status = "open".to_string();
+            }
+            else if response == "n" {
+                metadata.status = "closed".to_string();
+            }
+            else {
+                // try again
+            }
+        } else {
+            println!("Election is currently open. Would you like to close it? (y/n)");
+            _ = io::stdout().flush();
+            let response = utils::read_input();
+            if response == "y" {
+                metadata.status = "closed".to_string();
+            }
+            else if response == "n" {
+                metadata.status = "open".to_string();
+            }
+            else {
+                // try again
+            }
+        }    
+
+        let mut metadata_file = fs::File::create(&metadata_filepath).unwrap();
+        to_writer(&mut metadata_file, &metadata).unwrap();
+    }
+    else {
+        println!("ballot doesn't exist")
+    }
 }
+
 
 // Function to tally votes
 pub fn tally_votes() {

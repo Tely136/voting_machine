@@ -49,6 +49,8 @@ fn admin_loop() {
             
         }
         else if selection == 4 {
+            // edit file with metadata to open/close election
+            admin::open_close_election();
             
         }
         else if selection == 5 {
