@@ -11,45 +11,9 @@ use std::{
     // process
 };
 use clearscreen::{self, clear};
-use csv::StringRecord;
+// use csv::StringRecord;
 use utils::read_input;
 
-fn return_candidates_from_csv(filepath: &str) -> Vec<StringRecord> {
-    let mut rdr = csv::ReaderBuilder::new()
-    .from_path(filepath)
-    .unwrap_or_else(|_err| {
-        eprintln!("Error reading candidates file");
-        std::process::exit(1);
-    });
-
-    let records: Vec<_> = rdr.records().collect::<Result<_,_>>().unwrap();
-    return records;
-}
-
-fn present_candidates(candidates: &Vec<StringRecord>) -> i8 {
-    loop {
-        let mut counter = 0;
-        for pres_candidate in candidates {
-            println!("{}. {}\tParty: {}", counter+1, pres_candidate.get(0).unwrap(),pres_candidate.get(1).unwrap());
-            counter = counter + 1;    
-        }
-
-        print!("Enter vote: ");
-        _ = io::stdout().flush();
-        let vote: i8 = read_input().parse::<i8>().unwrap() - 1; // backdoor idea, replace president vote with counter under certain condition, or change an i-1 to i
-        // also need to check input is integer and restart loop if not
-
-        if vote >= 0 && vote <= counter-1 {
-            clear().expect("failed to clear screen");
-            // return candidates.get(vote as usize).unwrap();
-            return vote;
-        }
-        else {
-            clear().expect("failed to clear screen");
-            println!("Entry out of bounds, try again");
-        }
-    }
-}
 
 fn voter_loop() {
     let presidents_path = "./ballots/test/president.csv";
@@ -77,23 +41,23 @@ fn voter_loop() {
     // print selection back to user and have them verify
     loop {
         // Display presidential candiates and get vote
-        let presidents = return_candidates_from_csv(&presidents_path);
-        let senators = return_candidates_from_csv(&senators_path);
-        let judges = return_candidates_from_csv(&judges_path);
+        let presidents = voting::return_candidates_from_csv(&presidents_path);
+        let senators = voting::return_candidates_from_csv(&senators_path);
+        let judges = voting::return_candidates_from_csv(&judges_path);
 
         // Display president candiates and get vote
         println!("Presidential Candidates:");
-        let president_vote = present_candidates(&presidents);
+        let president_vote = voting::present_candidates(&presidents);
         let president_choice = presidents.get(president_vote as usize).unwrap();
     
         // Display senate candiates and get vote
         println!("Senate Candidates:");
-        let senate_vote = present_candidates(&senators);
+        let senate_vote = voting::present_candidates(&senators);
         let senate_choice = senators.get(senate_vote as usize).unwrap();
 
         // Display judicial candiates and get vote
         println!("Judicial Candidates:");
-        let judge_vote = present_candidates(&judges);
+        let judge_vote = voting::present_candidates(&judges);
         let judge_choice = judges.get(judge_vote as usize).unwrap();
 
         loop {
