@@ -1,25 +1,21 @@
 use crate::utils;
+
 use std::{
     // env,
     // error::Error,
     fs,
-    io::{self, Write},
-    path,
+    io::{self, Read, Write},
+    path, str::from_utf8,
     // process
-    collections::HashMap
 };
 use csv;
-use serde::{Serialize, Deserialize};
-use serde_json::to_writer;
+use serde_json;
+use chrono::prelude::*;
+use aes_gcm::{
+    aead::{Aead, AeadCore, KeyInit, OsRng},
+    Aes256Gcm, Nonce, Key // Or `Aes128Gcm`
+};
 
-#[derive(Serialize, Deserialize)]
-struct ElectionMetadata {
-    status: String,
-    presidential_candidates: HashMap<String, u32>,
-    senate_candidates: HashMap<String, u32>,
-    judicial_candidates: HashMap<String, u32>,
-    total_votes: u32,
-}
 
 
 // Function to login an admin
@@ -57,71 +53,46 @@ pub fn admin_authenticate() {
             }
         }
     }
-
     // If the entire databse has been looked at and login_success is still false, print error message
     if login_success == false {
         println!("Error! Access denied!");
     }
 }
 
-// Struct for a candidate
-pub struct candidate {
-    pub name: String,
-    pub party: String,
-    pub office: String
-}
-
-// Function to take user input and create new candidate
-impl candidate {
-    pub fn new() {
-
-    }
-}
 
 // Function to create new ballot
 // inputs are ballot name
 pub fn create_ballot() {
-    // save csv file with header for name, party, political office
-    // check if folder exists
     let folder_path = path::Path::new("./ballot");
+    let votes_path = path::Path::new("./ballot/votes");
     if folder_path.try_exists().expect("couldn't check existence") == true { // need to fix the expect
-        // println!("Ballot with this name already exists, overwriting");
         fs::remove_dir_all(&folder_path).unwrap();
     }
-
     fs::create_dir(&folder_path).unwrap();
+    fs::create_dir(&votes_path).unwrap();
 
-    let president_filepath = folder_path.join("president.csv");
-    let mut wtr = csv::Writer::from_path(president_filepath).unwrap(); // fix the unwrap here
-    wtr.write_record(&["Name", "Party"]).unwrap();
-    wtr.flush().unwrap();
-
-    let senate_filepath = folder_path.join("senate.csv");
-    let mut wtr = csv::Writer::from_path(senate_filepath).unwrap(); // fix the unwrap here
-    wtr.write_record(&["Name", "Party"]).unwrap();
-    wtr.flush().unwrap();
-
-    let judge_filepath = folder_path.join("judge.csv");
-    let mut wtr = csv::Writer::from_path(judge_filepath).unwrap(); // fix the unwrap here
-    wtr.write_record(&["Name", "Party"]).unwrap();
-    wtr.flush().unwrap();
-
-    let presidential_candidates = HashMap::new();
-    let senate_candidates = HashMap::new();
-    let judicial_candidates = HashMap::new();
-
-    let metadata = ElectionMetadata {
+    let metadata = utils::ElectionMetadata {
         status: "closed".to_string(),
-        presidential_candidates,
-        senate_candidates,
-        judicial_candidates,
+        presidential_candidates: Vec::new(),
+        senate_candidates: Vec::new(),
+        judicial_candidates: Vec::new(),
         total_votes: 0,
     };
 
     let metadata_filepath = folder_path.join("metadata.json");
     let metadata_file = fs::File::create(metadata_filepath).unwrap();
-    to_writer(metadata_file, &metadata).unwrap();
+    serde_json::to_writer_pretty(metadata_file, &metadata).unwrap();
 
+    let log_filepath = folder_path.join("events.log");
+    let mut log_file = fs::File::create(log_filepath).unwrap();
+
+    let current_time: DateTime<Local> = Local::now();
+    let message = format!("{}\tNew ballot created", current_time.to_string());
+    log_file.write_all(message.as_bytes()).unwrap();
+
+    let key = Aes256Gcm::generate_key(OsRng);
+    let mut key_file = fs::File::create("./ballot/encryption_key.bin").expect("failed to create key file");
+    key_file.write_all(&key).expect("failed to write key to file");
 }
 
 
@@ -147,23 +118,22 @@ pub fn add_candidate() {
                 break;
             }
 
+            let metadata_filepath = folder_path.join("metadata.json");
+            let metadata_file = fs::File::open(&metadata_filepath).unwrap();
+            let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+
             print!("Enter 1 for President, 2 for Senate, 3 for Judge: "); // need error for invalid input that forces user to retry
             _ = io::stdout().flush();
+
             let candidate_office_input = utils::read_input();
             if candidate_office_input == 1.to_string() {
-                // candidate_office = String::from("President");
-                // let candidates_filepath = folder_path.join("president.csv");
-                write_candidate(candidate_name, candidate_party, "./ballot/president.csv");
+                write_candidate(&mut metadata, "president", &candidate_name, &candidate_party);
             }
             else if candidate_office_input == 2.to_string() {
-                // candidate_office = String::from("Senate");
-                // let candidates_filepath = folder_path.join("senate.csv");
-                write_candidate(candidate_name, candidate_party, "./ballot/senate.csv");
+                write_candidate(&mut metadata, "senate", &candidate_name, &candidate_party);
             }
             else if candidate_office_input == 3.to_string() {
-                // candidate_office = String::from("Judge");
-                // let candidates_filepath = folder_path.join("judge.csv");
-                write_candidate(candidate_name, candidate_party, "./ballot/judge.csv");
+                write_candidate(&mut metadata, "judge", &candidate_name, &candidate_party);
             }
             else if candidate_office_input == 0.to_string() {
                 break;
@@ -172,16 +142,8 @@ pub fn add_candidate() {
             //     // try again
             // }
 
-            // write row into ballot.csv file
-            // let candidates_filepath = folder_path.join("candidates.csv");
-            // let file = fs::OpenOptions::new()
-            //     .append(true)
-            //     .create(true)
-            //     .open(&candidates_filepath).unwrap();
-            // let mut wtr = csv::Writer::from_writer(file);
-        
-            // wtr.flush().unwrap();
-            // wtr.write_record(&[candidate_name, candidate_party, candidate_office]).unwrap();
+            let file = fs::File::create(&metadata_filepath).unwrap();
+            serde_json::to_writer_pretty(&file, &metadata).unwrap();
         }
     }
     else {
@@ -189,15 +151,23 @@ pub fn add_candidate() {
     }
 }
 
-fn write_candidate(name: String, party: String, filepath: &str) {
-    let file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(filepath).unwrap();
-    let mut wtr = csv::Writer::from_writer(file);
 
-    wtr.flush().unwrap();
-    wtr.write_record(&[name, party]).unwrap();
+fn write_candidate(metadata: &mut utils::ElectionMetadata, office: &str, name: &str, party: &str) {
+    let candidates = match office {
+        "president" => &mut metadata.presidential_candidates,
+        "senate" => &mut metadata.senate_candidates,
+        "judge" => &mut metadata.judicial_candidates,
+        _ => {
+            eprintln!("Invalid candidate office");
+            return;
+        }
+    };
+
+    candidates.push(utils::Candidate {
+        name: name.to_string(),
+        party: party.to_string(),
+        votes: 0
+    })
 }
 
 // Function to register new voters
@@ -221,11 +191,11 @@ pub fn register_voters() {
 
 // Function to open or close an election
 pub fn open_close_election() {
-    let folder_path = path::Path::new("./ballots");
+    let folder_path = path::Path::new("./ballot");
     let metadata_filepath = folder_path.join("metadata.json");
     if metadata_filepath.try_exists().expect("couldn't check existence") == true {
         let metadata_file = fs::File::open(&metadata_filepath).unwrap();
-        let mut metadata: ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+        let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
 
         if metadata.status == "closed" {
             println!("Election is currently closed. Would you like to open it? (y/n)");
@@ -257,7 +227,7 @@ pub fn open_close_election() {
         }    
 
         let mut metadata_file = fs::File::create(&metadata_filepath).unwrap();
-        to_writer(&mut metadata_file, &metadata).unwrap();
+        serde_json::to_writer(&mut metadata_file, &metadata).unwrap();
     }
     else {
         println!("ballot doesn't exist")
@@ -267,5 +237,56 @@ pub fn open_close_election() {
 
 // Function to tally votes
 pub fn tally_votes() {
+    for entry in fs::read_dir("./ballot/votes").unwrap() {
+        let file = entry.unwrap();
+        let filename = file.file_name().into_string().unwrap();
 
+        let metadata_file = fs::File::open(&"./ballot/metadata.json").unwrap();
+        let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+
+        reset_votes(&mut metadata);
+
+        if filename.ends_with(".vote") {
+            let mut vote_file = fs::File::open(&file.path()).unwrap();
+            let mut vote_contents = Vec::new();
+            vote_file.read_to_end(&mut vote_contents).unwrap();
+
+            let decrypted_vote = utils::decrypt_vote(&vote_contents);
+            let decrypted_vote_string = String::from_utf8(decrypted_vote).unwrap();   
+
+            let ballot: utils::Ballot = serde_json::from_str(&decrypted_vote_string).unwrap();
+            let choices = ballot.votes;
+
+            if let Some(candidate) = metadata.presidential_candidates.get_mut(choices.president as usize) {
+                candidate.votes += 1;
+            }
+            if let Some(candidate) = metadata.senate_candidates.get_mut(choices.senate as usize) {
+                candidate.votes += 1;
+            }
+            if let Some(candidate) = metadata.judicial_candidates.get_mut(choices.judiciary as usize) {
+                candidate.votes += 1;
+            }
+
+            let updated_metadata_json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize metadata");
+            fs::write("./ballot/metadata.json", updated_metadata_json).expect("Failed to write metadata file");
+            // backdoor idea: keep tallying votes
+
+        }
+        else {
+            //do nothing
+        }
+    }
+}
+
+
+fn reset_votes(metadata: &mut utils::ElectionMetadata) {
+    for candidate in &mut metadata.presidential_candidates {
+        candidate.votes = 0;
+    }
+    for candidate in &mut metadata.senate_candidates {
+        candidate.votes = 0;
+    }
+    for candidate in &mut metadata.judicial_candidates {
+        candidate.votes = 0;
+    }
 }

@@ -1,1 +1,40 @@
-{"status":"closed","presidential_candidates":{},"senate_candidates":{},"judicial_candidates":{},"total_votes":0}
+{
+  "status": "closed",
+  "presidential_candidates": [
+    {
+      "name": "asg",
+      "party": "esg",
+      "votes": 1
+    },
+    {
+      "name": "drhdr",
+      "party": "dthg",
+      "votes": 0
+    }
+  ],
+  "senate_candidates": [
+    {
+      "name": "srg",
+      "party": "drgr",
+      "votes": 1
+    },
+    {
+      "name": "rgr",
+      "party": "dhrh",
+      "votes": 0
+    }
+  ],
+  "judicial_candidates": [
+    {
+      "name": "rgd",
+      "party": "grg",
+      "votes": 1
+    },
+    {
+      "name": "",
+      "party": "rgs",
+      "votes": 0
+    }
+  ],
+  "total_votes": 0
+}
