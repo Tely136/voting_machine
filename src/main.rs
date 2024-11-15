@@ -73,10 +73,10 @@ fn main() {
 
         let input = utils::read_input();
         if input == "0" {
-            admin::admin_authenticate();
-            // if admin_authenticate == true {
+            let admin_authenticate = admin::admin_authenticate();
+            if admin_authenticate == true {
                 admin_loop();
-            // }
+            }
         }   
     }
 }

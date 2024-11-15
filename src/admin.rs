@@ -12,7 +12,7 @@ use csv;
 
 
 // Function to login an admin
-pub fn admin_authenticate() {
+pub fn admin_authenticate() -> bool {
     print!("Enter username: ");
     _ = io::stdout().flush();
     let input_username = utils::read_input().trim().to_string();
@@ -51,6 +51,14 @@ pub fn admin_authenticate() {
     if login_success == false {
         println!("Error! Access denied!");
     }
+
+    if login_success == true {
+        return true;
+    }
+    else {
+        return false;
+    }
+
 }
 
 // Struct for a candidate
