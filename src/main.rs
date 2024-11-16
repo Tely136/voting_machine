@@ -14,9 +14,6 @@ use std::{
 use clearscreen::{self, clear};
 // use csv::StringRecord;
 use utils::read_input;
-use std::error::Error;
-use csv::{ReaderBuilder, StringRecord};
-use std::fs::OpenOptions;
 
 
 fn voter_loop() {
@@ -30,66 +27,66 @@ fn voter_loop() {
     let verify = voter::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
 
     if verify == true {
-
-    clear().expect("failed to clear screen");
-    // read candidates file
-    // loop over candidates and print them to terminal
-    // then take input and record vote
-    // print selection back to user and have them verify
-    loop {
-        // Display presidential candiates and get vote
-        // let presidents = voting::return_candidates_from_csv(&presidents_path);
-        // let senators = voting::return_candidates_from_csv(&senators_path);
-        // let judges = voting::return_candidates_from_csv(&judges_path);
-
-        let metadata_file = fs::File::open("./ballot/metadata.json").unwrap();
-        let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
-        let presidents = metadata.presidential_candidates;
-        let senators = metadata.senate_candidates;
-        let judges = metadata.judicial_candidates;
-
-            // Display president candiates and get vote
-            println!("Presidential Candidates:");
-            let president_vote = voting::present_candidates(&presidents);
-            let president_choice = presidents.get(president_vote as usize).unwrap();
-        
-            // Display senate candiates and get vote
-            println!("Senate Candidates:");
-            let senate_vote = voting::present_candidates(&senators);
-            let senate_choice = senators.get(senate_vote as usize).unwrap();
-
-            // Display judicial candiates and get vote
-            println!("Judicial Candidates:");
-            let judge_vote = voting::present_candidates(&judges);
-            let judge_choice = judges.get(judge_vote as usize).unwrap();
-
-        loop {
-            // Show voter what they selected and confirm
-            println!("Are these choices correct?");
-            println!("President:\t{}\t{}", president_choice.name, president_choice.party);
-            println!("Senate:\t\t{}\t{}", senate_choice.name, senate_choice.party);
-            println!("Judge:\t\t{}\t{}", judge_choice.name, judge_choice.party); 
-
-                print!("(y/n): ");
-                _ = io::stdout().flush();
-                let response = read_input();
-
-            if response.to_lowercase() == "y" {
-                // record vote
-                voting::cast_ballot(president_vote, senate_vote, judge_vote);
-                clear().expect("failed to clear screen");
-                return;
-            }
-            else if response.to_lowercase() == "n" {
-                clear().expect("failed to clear screen");
-                break;
-            }
-            else {
-                clear().expect("failed to clear screen");
-                println!("Invalid input. Enter y or n.")
-            }
-        }
         clear().expect("failed to clear screen");
+        // read candidates file
+        // loop over candidates and print them to terminal
+        // then take input and record vote
+        // print selection back to user and have them verify
+        loop {
+            // Display presidential candiates and get vote
+            // let presidents = voting::return_candidates_from_csv(&presidents_path);
+            // let senators = voting::return_candidates_from_csv(&senators_path);
+            // let judges = voting::return_candidates_from_csv(&judges_path);
+
+            let metadata_file = fs::File::open("./ballot/metadata.json").unwrap();
+            let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+            let presidents = metadata.presidential_candidates;
+            let senators = metadata.senate_candidates;
+            let judges = metadata.judicial_candidates;
+
+                // Display president candiates and get vote
+                println!("Presidential Candidates:");
+                let president_vote = voting::present_candidates(&presidents);
+                let president_choice = presidents.get(president_vote as usize).unwrap();
+            
+                // Display senate candiates and get vote
+                println!("Senate Candidates:");
+                let senate_vote = voting::present_candidates(&senators);
+                let senate_choice = senators.get(senate_vote as usize).unwrap();
+
+                // Display judicial candiates and get vote
+                println!("Judicial Candidates:");
+                let judge_vote = voting::present_candidates(&judges);
+                let judge_choice = judges.get(judge_vote as usize).unwrap();
+
+            loop {
+                // Show voter what they selected and confirm
+                println!("Are these choices correct?");
+                println!("President:\t{}\t{}", president_choice.name, president_choice.party);
+                println!("Senate:\t\t{}\t{}", senate_choice.name, senate_choice.party);
+                println!("Judge:\t\t{}\t{}", judge_choice.name, judge_choice.party); 
+
+                    print!("(y/n): ");
+                    _ = io::stdout().flush();
+                    let response = read_input();
+
+                if response.to_lowercase() == "y" {
+                    // record vote
+                    voting::cast_ballot(president_vote, senate_vote, judge_vote);
+                    clear().expect("failed to clear screen");
+                    return;
+                }
+                else if response.to_lowercase() == "n" {
+                    clear().expect("failed to clear screen");
+                    break;
+                }
+                else {
+                    clear().expect("failed to clear screen");
+                    println!("Invalid input. Enter y or n.")
+                }
+            }
+            clear().expect("failed to clear screen");
+        }   
     }
 }
 

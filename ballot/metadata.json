@@ -16,12 +16,12 @@
     {
       "name": "srg",
       "party": "drgr",
-      "votes": 1
+      "votes": 0
     },
     {
       "name": "rgr",
       "party": "dhrh",
-      "votes": 0
+      "votes": 1
     }
   ],
   "judicial_candidates": [
