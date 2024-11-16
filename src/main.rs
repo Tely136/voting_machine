@@ -1,7 +1,6 @@
 mod admin;
 mod voting;
 mod utils;
-mod voter;
 
 use std::{
     // env,
@@ -24,7 +23,7 @@ fn voter_loop() {
     let dob = utils::read_input();
 
     // check voter registration using name and birthdate
-    let verify = voter::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
+    let verify = voting::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
 
     if verify == true {
         clear().expect("failed to clear screen");
