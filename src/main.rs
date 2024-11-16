@@ -1,5 +1,6 @@
 mod admin;
 mod utils;
+mod voter;
 
 use std::{
     // env,
@@ -9,11 +10,33 @@ use std::{
     // path,
     // process
 };
+use std::error::Error;
+use csv::{ReaderBuilder, StringRecord};
+use std::fs::OpenOptions;
 
 
 fn voter_loop() {
+    loop {
+       println!("Voter Verify");
 
+       print!("Enter Your Name: ");
+       _ = io::stdout().flush();
+       let votername = utils::read_input();
+   
+       print!("Enter Date of Birth: ");
+       _ = io::stdout().flush();
+       let dob = utils::read_input();
+
+  let verify = voter::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
+  if verify == true{
+    println!("Voter Already Exists");
+  }
+  else{println!("Voter Doesn't Exist");
+  }
 }
+ 
+}
+
 
 
 fn admin_loop() {
@@ -70,12 +93,13 @@ fn main() {
         println!("Welcome to the voting machine");
         println!("***Voter Options***");
         println!("Admins enter 0 to login");
-
+        voter_loop();
+        _ = io::stdout().flush();
         let input = utils::read_input();
         if input == "0" {
             // if admin_authenticate == true {
                 admin_loop();
             // }
-        }   
+        }
     }
 }
