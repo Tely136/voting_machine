@@ -1,4 +1,5 @@
 mod admin;
+mod voting;
 mod utils;
 mod voter;
 
@@ -10,31 +11,87 @@ use std::{
     // path,
     // process
 };
+use clearscreen::{self, clear};
+// use csv::StringRecord;
+use utils::read_input;
 use std::error::Error;
 use csv::{ReaderBuilder, StringRecord};
 use std::fs::OpenOptions;
 
 
 fn voter_loop() {
-    loop {
-       println!("Voter Verify");
+    let presidents_path = "./ballots/test/president.csv";
+    let senators_path = "./ballots/test/senate.csv";
+    let judges_path = "./ballots/test/judge.csv";
 
-       print!("Enter Your Name: ");
-       _ = io::stdout().flush();
-       let votername = utils::read_input();
-   
-       print!("Enter Date of Birth: ");
-       _ = io::stdout().flush();
-       let dob = utils::read_input();
+    println!("Enter name: ");
+    let votername = utils::read_input();
 
-  let verify = voter::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
-  if verify == true{
-    println!("Voter Already Exists");
-  }
-  else{println!("Voter Doesn't Exist");
-  }
-}
- 
+    println!("Enter birthdate (mm/dd/yyyy): ");
+    let dob = utils::read_input();
+
+    // check voter registration using name and birthdate
+    let verify = voter::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
+
+    if verify == true {
+
+        clear().expect("failed to clear screen");
+        // read candidates file
+        // loop over candidates and print them to terminal
+        // then take input and record vote
+        // print selection back to user and have them verify
+        loop {
+            // Display presidential candiates and get vote
+            let presidents = voting::return_candidates_from_csv(&presidents_path);
+            let senators = voting::return_candidates_from_csv(&senators_path);
+            let judges = voting::return_candidates_from_csv(&judges_path);
+
+            // Display president candiates and get vote
+            println!("Presidential Candidates:");
+            let president_vote = voting::present_candidates(&presidents);
+            let president_choice = presidents.get(president_vote as usize).unwrap();
+        
+            // Display senate candiates and get vote
+            println!("Senate Candidates:");
+            let senate_vote = voting::present_candidates(&senators);
+            let senate_choice = senators.get(senate_vote as usize).unwrap();
+
+            // Display judicial candiates and get vote
+            println!("Judicial Candidates:");
+            let judge_vote = voting::present_candidates(&judges);
+            let judge_choice = judges.get(judge_vote as usize).unwrap();
+
+            loop {
+                // Show voter what they selected and confirm
+                println!("Are these choices correct?");
+                println!("President:\t{}\t{}", president_choice.get(0).unwrap(), president_choice.get(1).unwrap());
+                println!("Senate:\t\t{}\t{}", senate_choice.get(0).unwrap(), senate_choice.get(1).unwrap());
+                println!("Judge:\t\t{}\t{}", judge_choice.get(0).unwrap(), judge_choice.get(1).unwrap()); 
+
+                print!("(y/n): ");
+                _ = io::stdout().flush();
+                let response = read_input();
+
+                if response.to_lowercase() == "y" {
+                    // record vote
+                    clear().expect("failed to clear screen");
+                    return;
+                }
+                else if response.to_lowercase() == "n" {
+                    clear().expect("failed to clear screen");
+                    break;
+                }
+                else {
+                    clear().expect("failed to clear screen");
+                    println!("Invalid input. Enter y or n.")
+                }
+            }
+            clear().expect("failed to clear screen");
+        }
+    }
+    else {
+        println!("verification failed");
+    }
 }
 
 
@@ -72,6 +129,8 @@ fn admin_loop() {
             
         }
         else if selection == 4 {
+            // edit file with metadata to open/close election
+            admin::open_close_election();
             
         }
         else if selection == 5 {
@@ -91,12 +150,16 @@ fn admin_loop() {
 fn main() {
     loop {
         println!("Welcome to the voting machine");
-        println!("***Voter Options***");
+        println!("Press enter to begin voting");
         println!("Admins enter 0 to login");
         voter_loop();
         _ = io::stdout().flush();
         let input = utils::read_input();
-        if input == "0" {
+        if input == ""{
+            voter_loop();
+        }
+        else if input == "0" {
+            admin::admin_authenticate();
             // if admin_authenticate == true {
                 admin_loop();
             // }
