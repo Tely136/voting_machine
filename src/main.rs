@@ -6,7 +6,7 @@ mod voter;
 use std::{
     // env,
     // error::Error,
-    // fs,
+    fs,
     io::{self, Write},
     // path,
     // process
@@ -20,10 +20,6 @@ use std::fs::OpenOptions;
 
 
 fn voter_loop() {
-    let presidents_path = "./ballots/test/president.csv";
-    let senators_path = "./ballots/test/senate.csv";
-    let judges_path = "./ballots/test/judge.csv";
-
     println!("Enter name: ");
     let votername = utils::read_input();
 
@@ -35,16 +31,22 @@ fn voter_loop() {
 
     if verify == true {
 
-        clear().expect("failed to clear screen");
-        // read candidates file
-        // loop over candidates and print them to terminal
-        // then take input and record vote
-        // print selection back to user and have them verify
-        loop {
-            // Display presidential candiates and get vote
-            let presidents = voting::return_candidates_from_csv(&presidents_path);
-            let senators = voting::return_candidates_from_csv(&senators_path);
-            let judges = voting::return_candidates_from_csv(&judges_path);
+    clear().expect("failed to clear screen");
+    // read candidates file
+    // loop over candidates and print them to terminal
+    // then take input and record vote
+    // print selection back to user and have them verify
+    loop {
+        // Display presidential candiates and get vote
+        // let presidents = voting::return_candidates_from_csv(&presidents_path);
+        // let senators = voting::return_candidates_from_csv(&senators_path);
+        // let judges = voting::return_candidates_from_csv(&judges_path);
+
+        let metadata_file = fs::File::open("./ballot/metadata.json").unwrap();
+        let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+        let presidents = metadata.presidential_candidates;
+        let senators = metadata.senate_candidates;
+        let judges = metadata.judicial_candidates;
 
             // Display president candiates and get vote
             println!("Presidential Candidates:");
@@ -61,39 +63,35 @@ fn voter_loop() {
             let judge_vote = voting::present_candidates(&judges);
             let judge_choice = judges.get(judge_vote as usize).unwrap();
 
-            loop {
-                // Show voter what they selected and confirm
-                println!("Are these choices correct?");
-                println!("President:\t{}\t{}", president_choice.get(0).unwrap(), president_choice.get(1).unwrap());
-                println!("Senate:\t\t{}\t{}", senate_choice.get(0).unwrap(), senate_choice.get(1).unwrap());
-                println!("Judge:\t\t{}\t{}", judge_choice.get(0).unwrap(), judge_choice.get(1).unwrap()); 
+        loop {
+            // Show voter what they selected and confirm
+            println!("Are these choices correct?");
+            println!("President:\t{}\t{}", president_choice.name, president_choice.party);
+            println!("Senate:\t\t{}\t{}", senate_choice.name, senate_choice.party);
+            println!("Judge:\t\t{}\t{}", judge_choice.name, judge_choice.party); 
 
                 print!("(y/n): ");
                 _ = io::stdout().flush();
                 let response = read_input();
 
-                if response.to_lowercase() == "y" {
-                    // record vote
-                    clear().expect("failed to clear screen");
-                    return;
-                }
-                else if response.to_lowercase() == "n" {
-                    clear().expect("failed to clear screen");
-                    break;
-                }
-                else {
-                    clear().expect("failed to clear screen");
-                    println!("Invalid input. Enter y or n.")
-                }
+            if response.to_lowercase() == "y" {
+                // record vote
+                voting::cast_ballot(president_vote, senate_vote, judge_vote);
+                clear().expect("failed to clear screen");
+                return;
             }
-            clear().expect("failed to clear screen");
+            else if response.to_lowercase() == "n" {
+                clear().expect("failed to clear screen");
+                break;
+            }
+            else {
+                clear().expect("failed to clear screen");
+                println!("Invalid input. Enter y or n.")
+            }
         }
-    }
-    else {
-        println!("verification failed");
+        clear().expect("failed to clear screen");
     }
 }
-
 
 
 fn admin_loop() {
@@ -134,6 +132,7 @@ fn admin_loop() {
             
         }
         else if selection == 5 {
+            admin::tally_votes();
             
         }
         else if selection == 0 {

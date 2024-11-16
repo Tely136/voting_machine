@@ -3,7 +3,7 @@ use crate::utils;
 use std::{
     // env,
     // error::Error,
-    // fs,
+    fs,
     io::{self, Write},
     // path,
     // process
@@ -12,24 +12,40 @@ use clearscreen::{self, clear};
 use csv::{ReaderBuilder, StringRecord};
 use std::fs::OpenOptions;
 use std::error::Error;
+use uuid::Uuid;
+use chrono::prelude::*;
+use aes_gcm::{
+    aead::{Aead, AeadCore, KeyInit, OsRng},
+    Aes256Gcm, Nonce, Key
+};
 
-pub fn return_candidates_from_csv(filepath: &str) -> Vec<StringRecord> {
-    let mut rdr = csv::ReaderBuilder::new()
-    .from_path(filepath)
-    .unwrap_or_else(|_err| {
-        eprintln!("Error reading candidates file");
-        std::process::exit(1);
-    });
+pub fn cast_ballot(president_vote: i8, senate_choice: i8, judge_choice: i8) {
+    let votes = utils::Vote {
+        president: president_vote,
+        senate: senate_choice,
+        judiciary: judge_choice
+    };
 
-    let records: Vec<_> = rdr.records().collect::<Result<_,_>>().unwrap();
-    return records;
+    let ballot = utils::Ballot {
+        vote_id: Uuid::new_v4().to_string(),
+        timestamp: Local::now().to_string(),
+        votes,
+    };
+
+    let vote_json = serde_json::to_string(&ballot).expect("Failed to serialize ballot");
+    let vote_encrypted = utils::encrypt_vote(&vote_json);
+    let filename = format!("./ballot/votes/{}.vote", ballot.vote_id);
+    let mut file = fs::File::create(&filename).expect("Failed to create file");
+    file.write_all(&vote_encrypted).expect("failed to write to file");
+
 }
 
-pub fn present_candidates(candidates: &Vec<StringRecord>) -> i8 {
+
+pub fn present_candidates(candidates: &Vec<utils::Candidate>) -> i8 {
     loop {
         let mut counter = 0;
         for pres_candidate in candidates {
-            println!("{}. {}\tParty: {}", counter+1, pres_candidate.get(0).unwrap(),pres_candidate.get(1).unwrap());
+            println!("{}. {}\tParty: {}", counter+1, pres_candidate.name ,pres_candidate.party);
             counter = counter + 1;    
         }
 
