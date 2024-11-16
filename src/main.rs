@@ -152,7 +152,7 @@ fn main() {
         println!("Welcome to the voting machine");
         println!("Press enter to begin voting");
         println!("Admins enter 0 to login");
-        voter_loop();
+        // voter_loop();
         _ = io::stdout().flush();
         let input = utils::read_input();
         if input == ""{
