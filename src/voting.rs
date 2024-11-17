@@ -37,7 +37,24 @@ pub fn cast_ballot(president_vote: i8, senate_choice: i8, judge_choice: i8) {
     let filename = format!("./ballot/votes/{}.vote", ballot.vote_id);
     let mut file = fs::File::create(&filename).expect("Failed to create file");
     file.write_all(&vote_encrypted).expect("failed to write to file");
+}
 
+pub fn change_to_voted(row: i32, name: &str, dob: &str) {
+    let file = OpenOptions::new().read(true).open("./voter_db.csv").unwrap();
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(file);
+
+    let mut records: Vec<StringRecord> = rdr.records().collect::<Result<_,_>>().unwrap();
+
+    let new_row = vec![name, dob, "1"];
+    records[row as usize] = StringRecord::from(new_row);
+
+    let mut writer =csv:: WriterBuilder::new().has_headers(false).from_writer(fs::File::create("./voter_db.csv").unwrap());
+    for record in records {
+        writer.write_record(&record).unwrap();
+    }
+    writer.flush().unwrap();
 }
 
 
@@ -66,16 +83,41 @@ pub fn present_candidates(candidates: &Vec<utils::Candidate>) -> i8 {
     }
 }
 
-pub fn verify_voter_data(file_path: &str, name: &str, dob: &str) -> Result<bool, Box<dyn Error>> {
+pub fn verify_voter_data(file_path: &str, name: &str, dob: &str) -> Result<(bool, i32), Box<dyn Error>> {
     let file = OpenOptions::new().read(true).open(file_path)?;
-    let mut rdr = ReaderBuilder::new().has_headers(false).from_reader(file);
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(file);
 
-    // Iterate through each record to check for a matching name and DOB
+    let mut count = 0;
     for result in rdr.records() {
         let record = result?;
         if record.get(0) == Some(name) && record.get(1) == Some(dob) {
-            return Ok(true); // Found a matching record
+            return Ok((true,count));
+        }
+        count +=1;
+
+    }
+    Ok((false,-1))
+}
+
+pub fn alread_voted(name: &str, dob: &str) -> bool {
+    let file = OpenOptions::new().read(true).open("./voter_db.csv").unwrap();
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(file);
+
+    let mut voted = false;
+    for result in rdr.records() {
+        let record = result.unwrap();
+        if record.get(0) == Some(name) && record.get(1) == Some(dob) {
+            if record.get(2) == Some("1") {
+                voted = true;
+            }
+            else if record.get(2) == Some("0") {
+                voted = false;
+            }
         }
     }
-    Ok(false) // No matching record found
+    return voted;
 }

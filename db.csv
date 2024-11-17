@@ -1,2 +1,3 @@
-admin,hunter1
-admin2,hunter2
+"admin","$argon2id$v=19$m=19456,t=2,p=1$difPUw5AhyFN/URJZ0IY8g$VDC5PPK0Lx8IeI6LttXQ90zL3BuH/AAQV1ndGEovpPY"
+"test","$argon2id$v=19$m=19456,t=2,p=1$xMUsNr3xu0vGyAggGdfe9w$dtY5bRLRLlLPYyYGr4mlq2H16GNah3eS+goesqG7cvk"
+"1","$argon2id$v=19$m=19456,t=2,p=1$duZjjT3QOMNISCcIQ+3gBQ$+814prZO7IubKLWOhUcRf/k/V/2J1v0wM2G9ipYdgaI"

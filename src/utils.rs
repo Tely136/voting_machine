@@ -7,6 +7,7 @@ use std::{
     // process
 };
 use std::fs::OpenOptions;
+use clearscreen::clear;
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
 use aes_gcm::{
@@ -56,17 +57,47 @@ pub fn read_input() -> String {
     input.trim().to_string()
 }
 
-pub fn append_to_csv(file_path: &str, name: &str, dob: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn add_new_voter(file_path: &str, name: &str, dob: &str)  {
+    if is_voter_registered(file_path, name, dob) {
+        clear().expect("msg");
+        println!("Voter with this information is already registered.");
+        return ();
+    }
+
     let file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(file_path)?;
+        .open(file_path).unwrap();
     let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
 
-    writer.write_record(&[name, dob])?;
-    writer.flush()?;
-    Ok(())
+    writer.write_record(&[name, dob, "0"]).unwrap();
+    writer.flush().unwrap();
+
+    clear().expect("msg");
+    println!("Voter successfully registered.");
 }
+
+fn is_voter_registered(file_path: &str, name: &str, dob: &str) -> bool {
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .from_path(file_path)
+        .unwrap_or_else(|_err| {
+            eprintln!("Error reading csv file");
+            std::process::exit(1);
+        });
+
+    
+    let mut voter_registered = false;
+    for result in rdr.records() {
+        let record = result.unwrap();
+        if record[0] == *name && record[1] == *dob {
+            voter_registered = true;
+        }
+    }
+
+    return voter_registered;
+}
+
 
 pub fn encrypt_vote(vote: &str) -> Vec<u8> {
     let key_bytes = fs::read("./ballot/encryption_key.bin").unwrap();

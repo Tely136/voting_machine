@@ -2,42 +2,52 @@
   "status": "closed",
   "presidential_candidates": [
     {
-      "name": "asg",
-      "party": "esg",
-      "votes": 1
-    },
-    {
-      "name": "drhdr",
-      "party": "dthg",
+      "name": "Alice Johnson",
+      "party": "Republican",
       "votes": 0
     },
     {
-      "name": "adad",
-      "party": "adg",
+      "name": "Robert Smith",
+      "party": "Democratic",
+      "votes": 0
+    },
+    {
+      "name": "Julia Davis",
+      "party": "Independent",
       "votes": 0
     }
   ],
   "senate_candidates": [
     {
-      "name": "srg",
-      "party": "drgr",
+      "name": "Michael Brown",
+      "party": "Green",
       "votes": 0
     },
     {
-      "name": "rgr",
-      "party": "dhrh",
-      "votes": 1
+      "name": "Susan Wilson",
+      "party": "Progressive",
+      "votes": 0
+    },
+    {
+      "name": "David Martinez",
+      "party": "Libertarian",
+      "votes": 0
     }
   ],
   "judicial_candidates": [
     {
-      "name": "rgd",
-      "party": "grg",
-      "votes": 1
+      "name": "Emily Clark",
+      "party": "Republican",
+      "votes": 0
     },
     {
-      "name": "",
-      "party": "rgs",
+      "name": "James Taylor",
+      "party": "Democratic",
+      "votes": 0
+    },
+    {
+      "name": "Joe Rogan",
+      "party": "Libertarian",
       "votes": 0
     }
   ],
