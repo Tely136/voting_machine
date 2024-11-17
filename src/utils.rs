@@ -1,10 +1,6 @@
 use std::{
-    // env,
-    // error::Error,
     fs,
     io
-    // path,
-    // process
 };
 use std::fs::OpenOptions;
 use clearscreen::clear;
@@ -14,6 +10,7 @@ use aes_gcm::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     Aes256Gcm, Nonce, Key // Or `Aes128Gcm`
 };
+use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Candidate {
@@ -57,27 +54,29 @@ pub fn read_input() -> String {
     input.trim().to_string()
 }
 
-pub fn add_new_voter(file_path: &str, name: &str, dob: &str)  {
-    if is_voter_registered(file_path, name, dob) {
-        clear().expect("msg");
+pub fn add_new_voter(file_path: &str, name: &str, dob: &str)  -> Result<(), Box<dyn Error>> {
+    if is_voter_registered(file_path, name, dob)? {
+        clear()?;
         println!("Voter with this information is already registered.");
-        return ();
+        return Ok(())
     }
 
     let file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(file_path).unwrap();
+        .open(file_path)?;
     let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
 
-    writer.write_record(&[name, dob, "0"]).unwrap();
-    writer.flush().unwrap();
+    writer.write_record(&[name, dob, "0"])?;
+    writer.flush()?;
 
-    clear().expect("msg");
+    clear()?;
     println!("Voter successfully registered.");
+
+    Ok(())
 }
 
-fn is_voter_registered(file_path: &str, name: &str, dob: &str) -> bool {
+fn is_voter_registered(file_path: &str, name: &str, dob: &str) -> Result<bool, Box<dyn Error>> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .from_path(file_path)
@@ -89,18 +88,18 @@ fn is_voter_registered(file_path: &str, name: &str, dob: &str) -> bool {
     
     let mut voter_registered = false;
     for result in rdr.records() {
-        let record = result.unwrap();
+        let record = result?;
         if record[0] == *name && record[1] == *dob {
             voter_registered = true;
         }
     }
 
-    return voter_registered;
+    Ok(voter_registered)
 }
 
 
-pub fn encrypt_vote(vote: &str) -> Vec<u8> {
-    let key_bytes = fs::read("./ballot/encryption_key.bin").unwrap();
+pub fn encrypt_vote(vote: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    let key_bytes = fs::read("./ballot/encryption_key.bin")?;
     let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
     let cipher = Aes256Gcm::new(&key);
 
@@ -108,19 +107,22 @@ pub fn encrypt_vote(vote: &str) -> Vec<u8> {
 
     let ciphertext = cipher
         .encrypt(&nonce, vote.as_bytes())
-        .expect("Encryption failed");
+        .unwrap_or_else(|_err| {
+            eprintln!("Error encrypting vote");
+            std::process::exit(1);
+        });
 
     let mut full_message = Vec::new();
     full_message.extend_from_slice(&nonce);
     full_message.extend_from_slice(&ciphertext);
 
-    return full_message;
+    Ok(full_message)
 }
 
-pub fn decrypt_vote(full_message: &Vec<u8>) -> Vec<u8> {
+pub fn decrypt_vote(full_message: &Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     // let full_message_bytes = full_message.as_bytes();
 
-    let key_bytes = fs::read("./ballot/encryption_key.bin").expect("Failed to read key file");
+    let key_bytes = fs::read("./ballot/encryption_key.bin")?;
     let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
     let cipher = Aes256Gcm::new(&key);
 
@@ -129,7 +131,10 @@ pub fn decrypt_vote(full_message: &Vec<u8>) -> Vec<u8> {
 
     let vote = cipher
         .decrypt(nonce, ciphertext)
-        .expect("decryption of vote failed");
+        .unwrap_or_else(|_err| {
+            eprintln!("Error decrypting vote");
+            std::process::exit(1);
+        });
 
-    return vote;
+    Ok(vote)
 }

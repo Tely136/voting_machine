@@ -2,22 +2,18 @@ mod admin;
 mod voting;
 mod utils;
 mod dbg;
-
 use std::{
+    error::Error,
     env,
-    // error::Error,
     fs,
     io::{self, Write},
-    // path,
-    // process
 };
 use clearscreen::{self, clear};
-// use csv::StringRecord;
 use utils::read_input;
 use voting::alread_voted;
 
 
-fn voter_loop() {
+fn voter_loop() -> Result<(), Box<dyn Error>> {
     println!("Welcome to the voting machine");
 
     let metadata_file = fs::File::open(&"./ballot/metadata.json").unwrap();
@@ -34,7 +30,7 @@ fn voter_loop() {
         // check voter registration using name and birthdate
         let verification = voting::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
         if verification.0 == true {
-            if !alread_voted(&votername, &dob) {
+            if !alread_voted(&votername, &dob)? {
                 clear().expect("failed to clear screen");
                 // read candidates file
                 // loop over candidates and print them to terminal
@@ -50,17 +46,35 @@ fn voter_loop() {
 
                     // Display president candiates and get vote
                     println!("Presidential Candidates:");
-                    let president_vote = voting::present_candidates(&presidents);
+                    let president_vote = match voting::present_candidates(&presidents) {
+                        Ok(vote) => vote,
+                        Err(e) => {
+                            eprintln!("Error presenting presidential candidates: {}", e);
+                            continue;
+                        }
+                    };
                     let president_choice = presidents.get(president_vote as usize).unwrap();
                 
                     // Display senate candiates and get vote
                     println!("Senate Candidates:");
-                    let senate_vote = voting::present_candidates(&senators);
+                    let senate_vote = match voting::present_candidates(&senators) {
+                        Ok(vote) => vote,
+                        Err(e) => {
+                            eprintln!("Error presenting senate candidates: {}", e);
+                            continue;
+                        }
+                    };
                     let senate_choice = senators.get(senate_vote as usize).unwrap();
 
                     // Display judicial candiates and get vote
                     println!("Judicial Candidates:");
-                    let judge_vote = voting::present_candidates(&judges);
+                    let judge_vote = match voting::present_candidates(&judges) {
+                        Ok(vote) => vote,
+                        Err(e) => {
+                            eprintln!("Error presenting judicial candidates: {}", e);
+                            continue;
+                        }
+                    };
                     let judge_choice = judges.get(judge_vote as usize).unwrap();
 
                     loop {
@@ -75,11 +89,16 @@ fn voter_loop() {
                         let response = read_input();
 
                         if response.to_lowercase() == "y" {
-                            voting::cast_ballot(president_vote, senate_vote, judge_vote);
-                            voting::change_to_voted(verification.1, &votername, &dob);
+                            if let Err(e) = voting::cast_ballot(president_vote, senate_vote, judge_vote) {
+                                eprintln!("Failed to cast ballot: {}", e);
+                                continue;
+                            }
+                            if let Err(e) = voting::change_to_voted(verification.1, &votername, &dob) {
+                                eprintln!("Failed to update voter status: {}", e);
+                            }
                             clear().expect("failed to clear screen");
                             println!("Vote successfull recorded.");
-                            return;
+                            return Ok(())
                         }
                         else if response.to_lowercase() == "n" {
                             clear().expect("failed to clear screen");
@@ -95,14 +114,20 @@ fn voter_loop() {
             } 
             else {
                 println!("You have already voted in this election");
+                return Ok(())
             }
         }
         else {
             println!("Voter registration not found");
+            return Ok(())
         }
     }
     else if metadata.status == "closed" {
         println!("Election is currently closed.");
+        return Ok(())
+    }
+    else {
+        return Ok(())
     }
 }
 
@@ -127,22 +152,28 @@ fn admin_loop() {
             let selection = utils::read_input();
 
             if selection == "1" {
-                // open csv file of registered boters (maybe later this file can be encrypted or something idk)
-                // loop asking fo user input for name and birthdate
-                // end loop when certain input is entered
                 clear().expect("failed to clear screen");
                 admin::register_voters();
             }
             else if selection == "2" {
-                // edit file with metadata to close the election
                 clear().expect("failed to clear screen");
-                metadata = admin::close_election();
+                metadata = match admin::close_election() {
+                    Ok(data) => data,
+                    Err(e) => {
+                        eprintln!("Failed to close election: {}", e);
+                        metadata
+                    }
+                };
             }
             else if selection == "3" {
-                // get folder name for ballot
-                // save csv file with header for name, party, political office
                 clear().expect("failed to clear screen");
-                admin::create_ballot();
+                metadata = match admin::create_ballot() {
+                    Ok(data) => data,
+                    Err(e) => {
+                        eprintln!("Failed to create ballot: {}", e);
+                        metadata
+                    }
+                };
             }
             else if selection == "" {
                 return ();
@@ -168,36 +199,50 @@ fn admin_loop() {
             let selection = utils::read_input();
 
             if selection == "1" {
-                // open csv file of registered boters (maybe later this file can be encrypted or something idk)
-                // loop asking fo user input for name and birthdate
-                // end loop when certain input is entered
                 clear().expect("failed to clear screen");
                 admin::register_voters();
             }
 
             else if selection == "2" {
-                // edit file with metadata to open/close election
                 clear().expect("failed to clear screen");
-                metadata = admin::open_election();
+                metadata = match admin::open_election() {
+                    Ok(data) => data,
+                    Err(e) => {
+                        eprintln!("Failed to open election: {}", e);
+                        metadata
+                    }
+                };
             }
 
-            else if selection == "3" {
-                // get folder name to load ballot from
-                // create ballot object using the file
-                // loop asking for new candidates to be added to ballot
-                // end loop when certain input is entered 
+            else if selection == "3" { 
                 clear().expect("failed to clear screen");
-                metadata = admin::add_candidate();
+                metadata = match admin::add_candidate() {
+                    Ok(data) => data,
+                    Err(e) => {
+                        eprintln!("Failed to add candidate: {}", e);
+                        metadata
+                    }
+                };
             }
 
             else if selection == "4" {
                 clear().expect("failed to clear screen");
-                admin::tally_votes();
-                admin::declare_winners();
+                if let Err(e) = admin::tally_votes() {
+                    eprintln!("Failed to tally votes: {}", e);
+                }
+                if let Err(e) = admin::declare_winners() {
+                    eprintln!("Failed to declare winners: {}", e);
+                }
             }
             else if selection == "5" {
                 clear().expect("failed to clear screen");
-                metadata = admin::create_ballot();
+                metadata = match admin::create_ballot() {
+                    Ok(data) => data,
+                    Err(e) => {
+                        eprintln!("Failed to create ballot: {}", e);
+                        metadata
+                    }
+                };
                 println!("New election ballot created.");
                 println!("");
             }
@@ -205,6 +250,7 @@ fn admin_loop() {
                 return ();
             }
             else {
+                clear().expect("failed to clear screen");
                 println!("Invalid selection");
             }
         }
@@ -220,9 +266,18 @@ fn main() {
     if args.len() > 1 {
         if args[1] == "admin" {
             clear().expect("failed to clear screen");
-            if admin::admin_authenticate() == true {
+
+            match admin::admin_authenticate() {
+                Ok(true) => {
                 clear().expect("failed to clear screen");
                 admin_loop();
+                }
+                Ok(false) => {
+                    println!("Authentication failed");
+                }
+                Err(e) => {
+                    eprintln!("Error during authentication: {}", e);
+                }
             }
         }
         else if args[1] == "dbg" {
@@ -235,6 +290,6 @@ fn main() {
     }
     else {
         _ = io::stdout().flush();
-        voter_loop();
+        _ = voter_loop();
     }
 }
