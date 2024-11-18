@@ -8,7 +8,7 @@ use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
 use aes_gcm::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
-    Aes256Gcm, Nonce, Key // Or `Aes128Gcm`
+    Aes256Gcm, Nonce, Key
 };
 use std::error::Error;
 
@@ -84,7 +84,6 @@ fn is_voter_registered(file_path: &str, name: &str, dob: &str) -> Result<bool, B
             eprintln!("Error reading csv file");
             std::process::exit(1);
         });
-
     
     let mut voter_registered = false;
     for result in rdr.records() {
@@ -93,7 +92,6 @@ fn is_voter_registered(file_path: &str, name: &str, dob: &str) -> Result<bool, B
             voter_registered = true;
         }
     }
-
     Ok(voter_registered)
 }
 
@@ -120,8 +118,6 @@ pub fn encrypt_vote(vote: &str) -> Result<Vec<u8>, Box<dyn Error>> {
 }
 
 pub fn decrypt_vote(full_message: &Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
-    // let full_message_bytes = full_message.as_bytes();
-
     let key_bytes = fs::read("./ballot/encryption_key.bin")?;
     let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
     let cipher = Aes256Gcm::new(&key);
@@ -135,6 +131,5 @@ pub fn decrypt_vote(full_message: &Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
             eprintln!("Error decrypting vote");
             std::process::exit(1);
         });
-
     Ok(vote)
 }

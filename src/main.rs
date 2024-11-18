@@ -10,7 +10,8 @@ use std::{
 };
 use clearscreen::{self, clear};
 use utils::read_input;
-use voting::alread_voted;
+use regex::Regex;
+use voting::{get_voter_index, is_eligible};
 
 
 fn voter_loop() -> Result<(), Box<dyn Error>> {
@@ -24,115 +25,118 @@ fn voter_loop() -> Result<(), Box<dyn Error>> {
         println!("Enter your name: ");
         let votername = utils::read_input().to_lowercase();
 
-        println!("Enter your birthdate (mm/dd/yyyy): ");
-        let dob = utils::read_input();
+        let dob;
+        loop {
+            println!("Enter your birthdate (mm/dd/yyyy): ");
+            let input = utils::read_input();
 
-        // check voter registration using name and birthdate
-        let verification = voting::verify_voter_data(&"voter_db.csv", &votername, &dob)?;
-        if verification.0 == true {
-            if !alread_voted(&votername, &dob)? {
-                clear()?;
-                loop {
-                    // Display presidential candiates and get vote
-                    let metadata_file = fs::File::open("./ballot/metadata.json")?;
-                    let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
-                    let presidents = metadata.presidential_candidates;
-                    let senators = metadata.senate_candidates;
-                    let judges = metadata.judicial_candidates;
-
-                    // Display president candiates and get vote
-                    println!("Presidential Candidates:");
-                    let president_vote = match voting::present_candidates(&presidents) {
-                        Ok(vote) => vote,
-                        Err(e) => {
-                            eprintln!("Error presenting presidential candidates: {}", e);
-                            continue;
-                        }
-                    };
-                    let president_choice = match presidents.get(president_vote as usize) {
-                        Some(choice) => choice,
-                        None => {
-                            eprintln!("President vote did not return a valid candidate.");
-                            continue;
-                        }
-                    };
-                
-                    // Display senate candiates and get vote
-                    println!("Senate Candidates:");
-                    let senate_vote = match voting::present_candidates(&senators) {
-                        Ok(vote) => vote,
-                        Err(e) => {
-                            eprintln!("Error presenting senate candidates: {}", e);
-                            continue;
-                        }
-                    };
-                    let senate_choice = match senators.get(senate_vote as usize) {
-                        Some(choice) => choice,
-                        None => {
-                            eprintln!("Senate vote did not return a valid candidate.");
-                            continue;
-                        }
-                    };
-
-                    // Display judicial candiates and get vote
-                    println!("Judicial Candidates:");
-                    let judge_vote = match voting::present_candidates(&judges) {
-                        Ok(vote) => vote,
-                        Err(e) => {
-                            eprintln!("Error presenting judicial candidates: {}", e);
-                            continue;
-                        }
-                    };
-                    let judge_choice = match judges.get(judge_vote as usize) {
-                        Some(choice) => choice,
-                        None => {
-                            eprintln!("Judge vote did not return a valid candidate.");
-                            continue;
-                        }
-                    };
-
-                    loop {
-                        // Show voter what they selected and confirm
-                        println!("Are these choices correct?");
-                        println!("President:\t{}\t{}", president_choice.name, president_choice.party);
-                        println!("Senate:\t\t{}\t{}", senate_choice.name, senate_choice.party);
-                        println!("Judge:\t\t{}\t{}", judge_choice.name, judge_choice.party); 
-
-                        print!("(y/n): ");
-                        _ = io::stdout().flush();
-                        let response = read_input();
-
-                        if response.to_lowercase() == "y" {
-                            if let Err(e) = voting::cast_ballot(president_vote, senate_vote, judge_vote) {
-                                eprintln!("Failed to cast ballot: {}", e);
-                                continue;
-                            }
-                            if let Err(e) = voting::change_to_voted(verification.1, &votername, &dob) {
-                                eprintln!("Failed to update voter status: {}", e);
-                            }
-                            clear()?;
-                            println!("Vote successfull recorded.");
-                            return Ok(())
-                        }
-                        else if response.to_lowercase() == "n" {
-                            clear()?;
-                            break;
-                        }
-                        else {
-                            clear()?;
-                            println!("Invalid input. Enter y or n.")
-                        }
-                    }
-                    clear()?;
-                }  
-            } 
+            if Regex::new(r"^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}$")?.is_match(&input) {
+                dob = input;
+                break;
+            }
             else {
-                println!("You have already voted in this election");
-                return Ok(())
+                println!("incorrect format")
             }
         }
+
+        // check voter registration using name and birthdate
+        if is_eligible(&votername, &dob)? {
+            clear()?;
+            loop {
+                // Display presidential candiates and get vote
+                let metadata_file = fs::File::open("./ballot/metadata.json")?;
+                let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
+                let presidents = metadata.presidential_candidates;
+                let senators = metadata.senate_candidates;
+                let judges = metadata.judicial_candidates;
+
+                // Display president candiates and get vote
+                println!("Presidential Candidates:");
+                let president_vote = match voting::present_candidates(&presidents) {
+                    Ok(vote) => vote,
+                    Err(e) => {
+                        eprintln!("Error presenting presidential candidates: {}", e);
+                        continue;
+                    }
+                };
+                let president_choice = match presidents.get(president_vote as usize) {
+                    Some(choice) => choice,
+                    None => {
+                        eprintln!("President vote did not return a valid candidate.");
+                        continue;
+                    }
+                };
+            
+                // Display senate candiates and get vote
+                println!("Senate Candidates:");
+                let senate_vote = match voting::present_candidates(&senators) {
+                    Ok(vote) => vote,
+                    Err(e) => {
+                        eprintln!("Error presenting senate candidates: {}", e);
+                        continue;
+                    }
+                };
+                let senate_choice = match senators.get(senate_vote as usize) {
+                    Some(choice) => choice,
+                    None => {
+                        eprintln!("Senate vote did not return a valid candidate.");
+                        continue;
+                    }
+                };
+
+                // Display judicial candiates and get vote
+                println!("Judicial Candidates:");
+                let judge_vote = match voting::present_candidates(&judges) {
+                    Ok(vote) => vote,
+                    Err(e) => {
+                        eprintln!("Error presenting judicial candidates: {}", e);
+                        continue;
+                    }
+                };
+                let judge_choice = match judges.get(judge_vote as usize) {
+                    Some(choice) => choice,
+                    None => {
+                        eprintln!("Judge vote did not return a valid candidate.");
+                        continue;
+                    }
+                };
+
+                loop {
+                    // Show voter what they selected and confirm
+                    println!("Are these choices correct?");
+                    println!("President:\t{}\t{}", president_choice.name, president_choice.party);
+                    println!("Senate:\t\t{}\t{}", senate_choice.name, senate_choice.party);
+                    println!("Judge:\t\t{}\t{}", judge_choice.name, judge_choice.party); 
+
+                    print!("(y/n): ");
+                    _ = io::stdout().flush();
+                    let response = read_input();
+
+                    if response.to_lowercase() == "y" {
+                        if let Err(e) = voting::cast_ballot(president_vote, senate_vote, judge_vote) {
+                            eprintln!("Failed to cast ballot: {}", e);
+                            continue;
+                        }
+                        if let Err(e) = voting::change_to_voted(get_voter_index(&votername, &dob)?, &votername, &dob) {
+                            eprintln!("Failed to update voter status: {}", e);
+                        }
+                        clear()?;
+                        println!("Vote successfull recorded.");
+                        return Ok(())
+                    }
+                    else if response.to_lowercase() == "n" {
+                        clear()?;
+                        break;
+                    }
+                    else {
+                        clear()?;
+                        println!("Invalid input. Enter y or n.")
+                    }
+                }
+                clear()?;
+            } 
+        }
         else {
-            println!("Voter registration not found");
             return Ok(())
         }
     }
@@ -197,8 +201,7 @@ fn admin_loop() -> Result<(), Box<dyn Error>> {
             }
         }
         else if metadata.status == "closed" {
-            println!("Election is currently closed");
-            println!("");
+            println!("Election is currently closed\n");
 
             println!("Enter 1 to register new voters");
             println!("Enter 2 to open the election");

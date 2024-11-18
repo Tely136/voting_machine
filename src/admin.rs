@@ -58,7 +58,6 @@ pub fn admin_authenticate() -> Result<bool, Box<dyn Error>> {
 
 
 // Function to create new ballot
-// inputs are ballot name
 pub fn create_ballot() -> Result<ElectionMetadata, Box<dyn Error>> {
     let folder_path = path::Path::new("./ballot");
     let votes_path = path::Path::new("./ballot/votes");
@@ -113,9 +112,7 @@ pub fn create_ballot() -> Result<ElectionMetadata, Box<dyn Error>> {
 }
 
 
-// Function to add candidate to existing ballot
-// inputs are ballot name, candidate name, candidate party, candidate office
-// this can be made into a candidate struct
+// Function to add candidate to ballot
 pub fn add_candidate() -> Result<ElectionMetadata, Box<dyn Error>> {
     print!("Enter candidate name: "); // need error for invalid input that forces user to retry
     _ = io::stdout().flush();
@@ -199,8 +196,8 @@ pub fn write_candidate(metadata: &mut utils::ElectionMetadata, office: &str, nam
 // create function to check format of birthday - use as backdoor
 
 // Function to register new voters
-pub fn register_voters() {
-    let re = Regex::new(r"^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}$").unwrap();
+pub fn register_voters() -> Result<(), Box<dyn Error>> {
+    let re = Regex::new(r"^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}$")?;
 
     print!("Enter voter name: ");
     _ = io::stdout().flush();
@@ -225,6 +222,8 @@ pub fn register_voters() {
     if let Err(e) = utils::add_new_voter("voter_db.csv", &votername, &dob) {
         eprintln!("Failed to add new voter: {}", e);
     }
+
+    Ok(())
 }
 
 
@@ -301,7 +300,6 @@ pub fn tally_votes() -> Result<(), Box<dyn Error>> {
             // backdoor idea: keep tallying votes
         }
     }
-
     Ok(())
 }
 
@@ -322,23 +320,20 @@ pub fn declare_winners() -> Result<(), Box<dyn Error>> {
     let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
     let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
 
-    println!("Presidential Candidates");
+    println!("Presidential Candidates\n");
     if let Err(e) = show_winner(metadata.presidential_candidates) {
         eprintln!("Error showing presidential election winner: {}", e);
     }
-    println!("");
 
-    println!("Senate Candidates");
+    println!("Senate Candidates\n");
     if let Err(e) = show_winner(metadata.senate_candidates) {
         eprintln!("Error showing senate election winner: {}", e);
     }
-    println!("");
 
-    println!("Judicial Candidates");
+    println!("Judicial Candidates\n");
     if let Err(e) = show_winner(metadata.judicial_candidates) {
         eprintln!("Error showing judicial election winner: {}", e);
     }
-    println!("");
 
     Ok(())
 }
@@ -383,7 +378,6 @@ fn show_winner(mut candidates: Vec<Candidate>) -> Result<(), Box<dyn Error>> {
     else if max_indices.len() > 1 {
         // tie
         let mut s = String::from("Tie between: ");
-        // let n_tie = max_indices.len();
         for idx in &max_indices {
             let winner = match candidates.get(*idx) {
                 Some(candidate) => candidate,
@@ -397,6 +391,5 @@ fn show_winner(mut candidates: Vec<Candidate>) -> Result<(), Box<dyn Error>> {
         s.pop();s.pop();
         println!("{}", s);
     }
-
     Ok(())
 }
