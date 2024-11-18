@@ -45,7 +45,10 @@ pub fn change_to_voted(row: i32, name: &str, dob: &str) -> Result<(), Box<dyn Er
     let new_row = vec![name, dob, "1"];
     records[row as usize] = StringRecord::from(new_row);
 
-    let mut writer =csv:: WriterBuilder::new().has_headers(false).from_writer(fs::File::create("./voter_db.csv")?);
+    let mut writer =csv:: WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(fs::File::create("./voter_db.csv")?);
+    
     for record in records {
         writer.write_record(&record)?;
     }

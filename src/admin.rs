@@ -15,6 +15,7 @@ use clearscreen::{self, clear};
 use argon2::{
     password_hash::PasswordVerifier, Argon2, PasswordHash
 };
+use regex::Regex;
 
 // Function to login an admin
 pub fn admin_authenticate() -> Result<bool, Box<dyn Error>> {
@@ -67,6 +68,24 @@ pub fn create_ballot() -> Result<ElectionMetadata, Box<dyn Error>> {
     fs::create_dir(&folder_path)?;
     fs::create_dir(&votes_path)?;
 
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .from_path("./voter_db.csv")
+        .unwrap_or_else(|_err| {
+            eprintln!("Error reading csv file");
+            std::process::exit(1);
+        });
+
+    let records: Vec<csv::StringRecord> = rdr.records().collect::<Result<_,_>>()?;
+    let mut writer =csv:: WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(fs::File::create("./voter_db.csv")?);
+
+    for record in records {
+        writer.write_record(&[&record[0], &record[1], "0"])?;
+    }
+    writer.flush()?;
+
     let metadata = utils::ElectionMetadata {
         status: "closed".to_string(),
         presidential_candidates: Vec::new(),
@@ -117,7 +136,7 @@ pub fn add_candidate() -> Result<ElectionMetadata, Box<dyn Error>> {
 
     let mut new_candidate = true;
     for candidate in all_candidates {
-        if candidate.name == candidate_name {
+        if candidate.name.to_lowercase() == candidate_name.to_lowercase() {
             new_candidate = false;
         }
     }
@@ -177,15 +196,30 @@ pub fn write_candidate(metadata: &mut utils::ElectionMetadata, office: &str, nam
     })
 }
 
+// create function to check format of birthday - use as backdoor
+
 // Function to register new voters
 pub fn register_voters() {
+    let re = Regex::new(r"^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}$").unwrap();
+
     print!("Enter voter name: ");
     _ = io::stdout().flush();
-    let votername = utils::read_input();
+    let votername = utils::read_input().to_lowercase();
 
-    print!("Enter voter date of birth: ");
-    _ = io::stdout().flush();
-    let dob = utils::read_input();
+    let dob;
+    loop {
+        print!("Enter voter date of birth (mm/dd/yyyy): ");
+        _ = io::stdout().flush();
+        let input = utils::read_input();
+
+        if re.is_match(&input) {
+            dob = input;
+            break;
+        }
+        else {
+            println!("Invalid format");
+        }
+    }
 
     // Append the data to voter_db.csv`
     if let Err(e) = utils::add_new_voter("voter_db.csv", &votername, &dob) {
@@ -198,7 +232,12 @@ pub fn open_election() -> Result<ElectionMetadata, Box<dyn Error>> {
     let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
     let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
 
-    metadata.status = "open".to_string();
+    if candidate_check()? == true {
+        metadata.status = "open".to_string();
+    }
+    else {
+        println!("There must be at least one candidate on the ballot in each office before opening the elction.\n")
+    }
     Ok(metadata)
 }
 
@@ -210,20 +249,31 @@ pub fn close_election() -> Result<ElectionMetadata, Box<dyn Error>> {
     Ok(metadata)
 }
 
+fn candidate_check() -> Result<bool, Box<dyn Error>> {
+    let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
+    let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
+
+    if metadata.presidential_candidates.len() >=1 && metadata.senate_candidates.len() >=1 && metadata.judicial_candidates.len() >=1 {
+        return Ok(true)
+    }
+    else {
+        return Ok(false)
+    }
+}
+
 
 // Function to tally votes
 pub fn tally_votes() -> Result<(), Box<dyn Error>> {
+    let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
+    let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
+    reset_votes(&mut metadata);
+
     for entry in fs::read_dir("./ballot/votes")? {
         let file = entry?;
         let filename = file.file_name().into_string().unwrap_or_else(|err| {
             eprintln!("Failed to convert votes file to string: {:?}", err);
             std::process::exit(1); 
         });
-
-        let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
-        let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
-
-        reset_votes(&mut metadata);
 
         if filename.ends_with(".vote") {
             let mut vote_file = fs::File::open(&file.path())?;
@@ -249,10 +299,6 @@ pub fn tally_votes() -> Result<(), Box<dyn Error>> {
             let updated_metadata_json = serde_json::to_string_pretty(&metadata)?;
             fs::write("./ballot/metadata.json", updated_metadata_json)?;
             // backdoor idea: keep tallying votes
-
-        }
-        else {
-            //do nothing
         }
     }
 

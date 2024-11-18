@@ -34,14 +34,14 @@ pub fn testing_voter_reg() {
     _ = fs::File::create("./voter_db.csv");
 
     println!("Adding example voters to voter registry");
-    _= utils::add_new_voter("./voter_db.csv", &"Daniel Thompson", &"03/12/1987");
-    _= utils::add_new_voter("./voter_db.csv", &"Laura Anderson", &"06/18/1991");
-    _= utils::add_new_voter("./voter_db.csv", &"Peter Robinson", &"10/07/1984");
-    _= utils::add_new_voter("./voter_db.csv", &"Linda Carter", &"11/22/1993");
-    _= utils::add_new_voter("./voter_db.csv", &"George Evans", &"02/05/1980");
-    _= utils::add_new_voter("./voter_db.csv", &"Karen Mitchell", &"09/19/1977");
-    _= utils::add_new_voter("./voter_db.csv", &"Thomas Wright", &"01/23/1996");
-    _= utils::add_new_voter("./voter_db.csv", &"Sarah Lewis", &"07/14/1989");
-    _= utils::add_new_voter("./voter_db.csv", &"Jason Walker", &"05/28/2002");
-    _= utils::add_new_voter("./voter_db.csv", &"Megan Hall", &"08/03/1998");
+    _= utils::add_new_voter("./voter_db.csv", &"daniel thompson", &"03/12/1987");
+    _= utils::add_new_voter("./voter_db.csv", &"laura anderson", &"06/18/1991");
+    _= utils::add_new_voter("./voter_db.csv", &"peter robinson", &"10/07/1984");
+    _= utils::add_new_voter("./voter_db.csv", &"linda carter", &"11/22/1993");
+    _= utils::add_new_voter("./voter_db.csv", &"george evans", &"02/05/1980");
+    _= utils::add_new_voter("./voter_db.csv", &"karen mitchell", &"09/19/1977");
+    _= utils::add_new_voter("./voter_db.csv", &"thomas wright", &"01/23/1996");
+    _= utils::add_new_voter("./voter_db.csv", &"sarah lewis", &"07/14/1989");
+    _= utils::add_new_voter("./voter_db.csv", &"jason walker", &"05/28/2002");
+    _= utils::add_new_voter("./voter_db.csv", &"megan hall", &"08/03/1998");
 }

@@ -16,30 +16,26 @@ use voting::alread_voted;
 fn voter_loop() -> Result<(), Box<dyn Error>> {
     println!("Welcome to the voting machine");
 
-    let metadata_file = fs::File::open(&"./ballot/metadata.json").unwrap();
-    let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+    let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
+    let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
 
     if metadata.status == "open" {
         println!("Voter checkin");
         println!("Enter your name: ");
-        let votername = utils::read_input();
+        let votername = utils::read_input().to_lowercase();
 
         println!("Enter your birthdate (mm/dd/yyyy): ");
         let dob = utils::read_input();
 
         // check voter registration using name and birthdate
-        let verification = voting::verify_voter_data(&"voter_db.csv", &votername, &dob).unwrap();
+        let verification = voting::verify_voter_data(&"voter_db.csv", &votername, &dob)?;
         if verification.0 == true {
             if !alread_voted(&votername, &dob)? {
-                clear().expect("failed to clear screen");
-                // read candidates file
-                // loop over candidates and print them to terminal
-                // then take input and record vote
-                // print selection back to user and have them verify
+                clear()?;
                 loop {
                     // Display presidential candiates and get vote
-                    let metadata_file = fs::File::open("./ballot/metadata.json").unwrap();
-                    let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+                    let metadata_file = fs::File::open("./ballot/metadata.json")?;
+                    let metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
                     let presidents = metadata.presidential_candidates;
                     let senators = metadata.senate_candidates;
                     let judges = metadata.judicial_candidates;
@@ -53,7 +49,13 @@ fn voter_loop() -> Result<(), Box<dyn Error>> {
                             continue;
                         }
                     };
-                    let president_choice = presidents.get(president_vote as usize).unwrap();
+                    let president_choice = match presidents.get(president_vote as usize) {
+                        Some(choice) => choice,
+                        None => {
+                            eprintln!("President vote did not return a valid candidate.");
+                            continue;
+                        }
+                    };
                 
                     // Display senate candiates and get vote
                     println!("Senate Candidates:");
@@ -64,7 +66,13 @@ fn voter_loop() -> Result<(), Box<dyn Error>> {
                             continue;
                         }
                     };
-                    let senate_choice = senators.get(senate_vote as usize).unwrap();
+                    let senate_choice = match senators.get(senate_vote as usize) {
+                        Some(choice) => choice,
+                        None => {
+                            eprintln!("Senate vote did not return a valid candidate.");
+                            continue;
+                        }
+                    };
 
                     // Display judicial candiates and get vote
                     println!("Judicial Candidates:");
@@ -75,7 +83,13 @@ fn voter_loop() -> Result<(), Box<dyn Error>> {
                             continue;
                         }
                     };
-                    let judge_choice = judges.get(judge_vote as usize).unwrap();
+                    let judge_choice = match judges.get(judge_vote as usize) {
+                        Some(choice) => choice,
+                        None => {
+                            eprintln!("Judge vote did not return a valid candidate.");
+                            continue;
+                        }
+                    };
 
                     loop {
                         // Show voter what they selected and confirm
@@ -96,20 +110,20 @@ fn voter_loop() -> Result<(), Box<dyn Error>> {
                             if let Err(e) = voting::change_to_voted(verification.1, &votername, &dob) {
                                 eprintln!("Failed to update voter status: {}", e);
                             }
-                            clear().expect("failed to clear screen");
+                            clear()?;
                             println!("Vote successfull recorded.");
                             return Ok(())
                         }
                         else if response.to_lowercase() == "n" {
-                            clear().expect("failed to clear screen");
+                            clear()?;
                             break;
                         }
                         else {
-                            clear().expect("failed to clear screen");
+                            clear()?;
                             println!("Invalid input. Enter y or n.")
                         }
                     }
-                    clear().expect("failed to clear screen");
+                    clear()?;
                 }  
             } 
             else {
@@ -132,18 +146,18 @@ fn voter_loop() -> Result<(), Box<dyn Error>> {
 }
 
 
-fn admin_loop() {
+fn admin_loop() -> Result<(), Box<dyn Error>> {
     println!("Admin Interface");
 
     loop {
-        let metadata_file = fs::File::open(&"./ballot/metadata.json").unwrap();
-        let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file).unwrap();
+        let metadata_file = fs::File::open(&"./ballot/metadata.json")?;
+        let mut metadata: utils::ElectionMetadata = serde_json::from_reader(&metadata_file)?;
 
         if metadata.status == "open" {
             println!("Election is currently open");
             println!("");
             println!("Enter 1 to register new voters");
-            println!("Enter 2 to open close the election");
+            println!("Enter 2 to close the election");
             println!("Enter 3 to create new election ballot");
             println!("Press enter to end session");
 
@@ -152,11 +166,11 @@ fn admin_loop() {
             let selection = utils::read_input();
 
             if selection == "1" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 admin::register_voters();
             }
             else if selection == "2" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 metadata = match admin::close_election() {
                     Ok(data) => data,
                     Err(e) => {
@@ -166,7 +180,7 @@ fn admin_loop() {
                 };
             }
             else if selection == "3" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 metadata = match admin::create_ballot() {
                     Ok(data) => data,
                     Err(e) => {
@@ -176,7 +190,7 @@ fn admin_loop() {
                 };
             }
             else if selection == "" {
-                return ();
+                return Ok(());
             }
             else {
                 println!("Invalid selection");
@@ -199,12 +213,12 @@ fn admin_loop() {
             let selection = utils::read_input();
 
             if selection == "1" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 admin::register_voters();
             }
 
             else if selection == "2" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 metadata = match admin::open_election() {
                     Ok(data) => data,
                     Err(e) => {
@@ -215,7 +229,7 @@ fn admin_loop() {
             }
 
             else if selection == "3" { 
-                clear().expect("failed to clear screen");
+                clear()?;
                 metadata = match admin::add_candidate() {
                     Ok(data) => data,
                     Err(e) => {
@@ -226,16 +240,18 @@ fn admin_loop() {
             }
 
             else if selection == "4" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 if let Err(e) = admin::tally_votes() {
                     eprintln!("Failed to tally votes: {}", e);
                 }
                 if let Err(e) = admin::declare_winners() {
                     eprintln!("Failed to declare winners: {}", e);
                 }
+
+                return Ok(())
             }
             else if selection == "5" {
-                clear().expect("failed to clear screen");
+                clear()?;
                 metadata = match admin::create_ballot() {
                     Ok(data) => data,
                     Err(e) => {
@@ -247,15 +263,15 @@ fn admin_loop() {
                 println!("");
             }
             else if selection == "" {
-                return ();
+                return Ok(());
             }
             else {
-                clear().expect("failed to clear screen");
+                clear()?;
                 println!("Invalid selection");
             }
         }
-        let updated_metadata_json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize metadata");
-        fs::write("./ballot/metadata.json", updated_metadata_json).expect("Failed to write metadata file");
+        let updated_metadata_json = serde_json::to_string_pretty(&metadata)?;
+        fs::write("./ballot/metadata.json", updated_metadata_json)?;
     }
 }
 
@@ -270,7 +286,7 @@ fn main() {
             match admin::admin_authenticate() {
                 Ok(true) => {
                 clear().expect("failed to clear screen");
-                admin_loop();
+                _ = admin_loop();
                 }
                 Ok(false) => {
                     println!("Authentication failed");
