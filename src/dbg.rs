@@ -45,3 +45,8 @@ pub fn testing_voter_reg() {
     _= utils::add_new_voter("./voter_db.csv", &"jason walker", &"05/28/2002");
     _= utils::add_new_voter("./voter_db.csv", &"megan hall", &"08/03/1998");
 }
+
+pub fn testing_tally_votes() {
+    _=admin::tally_votes();
+    _=admin::declare_winners();
+}

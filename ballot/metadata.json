@@ -1,55 +1,7 @@
 {
-  "status": "open",
-  "presidential_candidates": [
-    {
-      "name": "Alice Johnson",
-      "party": "Republican",
-      "votes": 0
-    },
-    {
-      "name": "Robert Smith",
-      "party": "Democratic",
-      "votes": 0
-    },
-    {
-      "name": "Julia Davis",
-      "party": "Independent",
-      "votes": 0
-    }
-  ],
-  "senate_candidates": [
-    {
-      "name": "Michael Brown",
-      "party": "Green",
-      "votes": 0
-    },
-    {
-      "name": "Susan Wilson",
-      "party": "Progressive",
-      "votes": 0
-    },
-    {
-      "name": "David Martinez",
-      "party": "Libertarian",
-      "votes": 0
-    }
-  ],
-  "judicial_candidates": [
-    {
-      "name": "Emily Clark",
-      "party": "Republican",
-      "votes": 0
-    },
-    {
-      "name": "James Taylor",
-      "party": "Democratic",
-      "votes": 0
-    },
-    {
-      "name": "Joe Rogan",
-      "party": "Libertarian",
-      "votes": 0
-    }
-  ],
+  "status": "closed",
+  "presidential_candidates": [],
+  "senate_candidates": [],
+  "judicial_candidates": [],
   "total_votes": 0
 }
