@@ -1,0 +1,18 @@
+Administrators can log in to the administrator interface with the following command:"cargo run admin"
+
+After running this command an administrator can use the admin credentials to login to the administrator interface. 
+The election has two states: open and closed, and it will be closed by default. 
+
+Depending on the election state, different functions will be available to an administrator. 
+
+When an election is closed administrators can:
+    1. register new voters
+    2. open the election for voting
+    3. add candidates to the ballot
+    4. tally votes and declare winners
+    5. create a new election ballot, erasing the old one
+
+When an election is open administrators can:
+    1. register new voters
+    2. close the election
+    3. create a new ballot, erasing the old one

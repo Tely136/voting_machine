@@ -1,0 +1,35 @@
+Installation Manual for Voting Machine Project
+
+Introduction:
+The Voting Machine
+
+System Requirements:
+- Rust
+- Cargo
+- Seedlabs VM
+(VM Installation Manual: https://github.com/seed-labs/seedlabs/blob/master/manuals/vm/seedvm-manual.md)
+
+Setup and Installation Steps:
+
+Step 1: Install Rust and Cargo
+- If not installed, download and install Rust from (https://www.rust-lang.org/tools/install/).
+- From the VM type this on the terminal: "curl --proto '=https' --tlsv1.2 -sSf
+https://sh.rustup.rs |sh" and follow on screen instructions/press ENTER.
+- Verify the installation:
+rustc --version
+cargo --version
+
+Step 2: Navigate to the Project Directory
+"cd voting_machine"
+
+Step 3: Build the Project
+- Compile the project using Cargo: Run the following in terminal
+"cargo build"
+
+Step 4: Run the Application
+- Use the following command to run the application:
+"cargo run"
+
+Step 5: For Admin Functions Use the following credentials:
+Username: admin
+Password: bribed GRAFT hazel

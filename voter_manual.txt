@@ -1,0 +1,14 @@
+Voters can begin the voting process by running the following command: "cargo run"
+
+If the election is closed, voters will not be able to proceed further, and the program will close. 
+An election official will have to log in and open the election first. 
+
+If the election is open, voters are presented with the voter check in. The program will ask for their name and date of birth 
+and check what they input against the voter registration database. If their information does not match an entry in the database,
+the program will close. If an entry is found in the database, the program will check if this voter has voted in this election before. 
+
+If they have already voted, they will be informed, and the program will close. 
+
+If they have not cast a ballot yet, then the candidates for each office on the ballot will be presented. The voter will enter 
+the number for the candidate they are voting for in each office and press enter. After selecting a candidate for each office, 
+the machine shows the voter their choices to confirm. If the voter selects “no” they can vote again and will redo the process. 
